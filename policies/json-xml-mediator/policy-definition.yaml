@@ -6,8 +6,25 @@ description: |
 parameters:
   type: object
   additionalProperties: false
-  required: ["upstreamPayloadFormat", "downsteamPayloadFormat"]
+  required: ["upstreamPayloadFormat"]
+  anyOf:
+    - required: ["downstreamPayloadFormat"]
+    - required: ["downsteamPayloadFormat"]
   allOf:
+    - not:
+        required: ["upstreamPayloadFormat", "downstreamPayloadFormat"]
+        properties:
+          upstreamPayloadFormat:
+            const: xml
+          downstreamPayloadFormat:
+            const: xml
+    - not:
+        required: ["upstreamPayloadFormat", "downstreamPayloadFormat"]
+        properties:
+          upstreamPayloadFormat:
+            const: json
+          downstreamPayloadFormat:
+            const: json
     - not:
         required: ["upstreamPayloadFormat", "downsteamPayloadFormat"]
         properties:
@@ -23,10 +40,15 @@ parameters:
           downsteamPayloadFormat:
             const: json
   properties:
-    downsteamPayloadFormat:
+    downstreamPayloadFormat:
       type: string
       x-wso2-policy-advanced-param: false
       description: Defines the payload format expected by downstream clients. Requests are converted from this format before reaching upstream, and responses are converted back to this format before returning to the client. This value must differ from upstreamPayloadFormat.
+      enum: ["xml", "json"]
+    downsteamPayloadFormat:
+      type: string
+      x-wso2-policy-advanced-param: false
+      description: Deprecated alias of downstreamPayloadFormat (kept for backward compatibility with configs created before the typo fix). Use downstreamPayloadFormat instead. If both are set they must have the same value.
       enum: ["xml", "json"]
     upstreamPayloadFormat:
       type: string

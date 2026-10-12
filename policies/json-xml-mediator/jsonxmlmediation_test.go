@@ -59,9 +59,44 @@ func configuredParams(upstreamPayloadFormat string, downstreamPayloadFormat ...s
 		"upstreamPayloadFormat": upstreamPayloadFormat,
 	}
 	if len(downstreamPayloadFormat) > 0 {
-		params["downsteamPayloadFormat"] = downstreamPayloadFormat[0]
+		params["downstreamPayloadFormat"] = downstreamPayloadFormat[0]
 	}
 	return params
+}
+
+func TestGetPolicy_LegacyMisspelledAlias(t *testing.T) {
+	// Backward compatibility: the deprecated misspelled key still works.
+	p := newConfiguredPolicy(t, map[string]interface{}{
+		"upstreamPayloadFormat":  "xml",
+		"downsteamPayloadFormat": "json",
+	})
+	if p.downstreamPayloadFormat != upstreamPayloadFormatJSON {
+		t.Fatalf("expected downstream format %q via legacy alias, got %q", upstreamPayloadFormatJSON, p.downstreamPayloadFormat)
+	}
+}
+
+func TestGetPolicy_ConflictingDownstreamKeys(t *testing.T) {
+	_, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
+		"upstreamPayloadFormat":   "xml",
+		"downstreamPayloadFormat": "json",
+		"downsteamPayloadFormat":  "xml",
+	})
+	if err == nil {
+		t.Fatalf("expected error when both downstream keys are set to different values")
+	}
+	if !strings.Contains(err.Error(), "must not be set to different values") {
+		t.Fatalf("expected conflict error, got %q", err.Error())
+	}
+
+	// Same value on both keys is accepted (canonical value wins).
+	p := newConfiguredPolicy(t, map[string]interface{}{
+		"upstreamPayloadFormat":   "xml",
+		"downstreamPayloadFormat": "json",
+		"downsteamPayloadFormat":  "json",
+	})
+	if p.downstreamPayloadFormat != upstreamPayloadFormatJSON {
+		t.Fatalf("expected downstream format %q, got %q", upstreamPayloadFormatJSON, p.downstreamPayloadFormat)
+	}
 }
 
 func TestGetPolicy(t *testing.T) {
@@ -120,22 +155,22 @@ func TestGetPolicy_InvalidUpstreamFormatConfig(t *testing.T) {
 		{
 			name:      "missing downstreamPayloadFormat",
 			params:    map[string]interface{}{"upstreamPayloadFormat": "xml"},
-			expectMsg: "downsteamPayloadFormat must be a non-empty string",
+			expectMsg: "downstreamPayloadFormat must be a non-empty string",
 		},
 		{
 			name:      "empty downstreamPayloadFormat",
-			params:    map[string]interface{}{"upstreamPayloadFormat": "xml", "downsteamPayloadFormat": ""},
-			expectMsg: "downsteamPayloadFormat must be a non-empty string",
+			params:    map[string]interface{}{"upstreamPayloadFormat": "xml", "downstreamPayloadFormat": ""},
+			expectMsg: "downstreamPayloadFormat must be a non-empty string",
 		},
 		{
 			name:      "invalid downstream enum value",
-			params:    map[string]interface{}{"upstreamPayloadFormat": "xml", "downsteamPayloadFormat": "yaml"},
-			expectMsg: "downsteamPayloadFormat must be one of [xml, json]",
+			params:    map[string]interface{}{"upstreamPayloadFormat": "xml", "downstreamPayloadFormat": "yaml"},
+			expectMsg: "downstreamPayloadFormat must be one of [xml, json]",
 		},
 		{
 			name:      "same upstream and downstream format",
-			params:    map[string]interface{}{"upstreamPayloadFormat": "xml", "downsteamPayloadFormat": "xml"},
-			expectMsg: "downsteamPayloadFormat must be different from upstreamPayloadFormat",
+			params:    map[string]interface{}{"upstreamPayloadFormat": "xml", "downstreamPayloadFormat": "xml"},
+			expectMsg: "downstreamPayloadFormat must be different from upstreamPayloadFormat",
 		},
 	}
 

@@ -99,7 +99,7 @@ func GetPolicy(
 		return nil, err
 	}
 	if downstreamPayloadFormat == upstreamPayloadFormat {
-		return nil, fmt.Errorf("Invalid policy configuration: downsteamPayloadFormat must be different from upstreamPayloadFormat")
+		return nil, fmt.Errorf("Invalid policy configuration: downstreamPayloadFormat must be different from upstreamPayloadFormat")
 	}
 
 	return &JSONXMLMediationPolicy{
@@ -123,8 +123,34 @@ func getUpstreamPayloadFormat(params map[string]interface{}) (string, error) {
 }
 
 func getDownstreamPayloadFormat(params map[string]interface{}) (string, error) {
-	downstreamPayloadFormat, _, err := getPayloadFormat(params, "downsteamPayloadFormat", true)
-	return downstreamPayloadFormat, err
+	// Correct spelling is preferred. The misspelled "downsteamPayloadFormat"
+	// is kept as a deprecated alias so existing API configs keep working.
+	// If both keys are set they must agree.
+	correct, correctPresent, correctErr := getPayloadFormat(params, "downstreamPayloadFormat", false)
+	legacy, legacyPresent, legacyErr := getPayloadFormat(params, "downsteamPayloadFormat", false)
+	if correctPresent && correctErr != nil {
+		return "", correctErr
+	}
+	if legacyPresent && legacyErr != nil {
+		// Report the error against the canonical name so users migrate.
+		if strings.Contains(legacyErr.Error(), "downsteamPayloadFormat") {
+			return "", fmt.Errorf("%s", strings.ReplaceAll(legacyErr.Error(), "downsteamPayloadFormat", "downstreamPayloadFormat"))
+		}
+		return "", legacyErr
+	}
+	if correctPresent && legacyPresent {
+		if correct != legacy {
+			return "", fmt.Errorf("Invalid policy configuration: downstreamPayloadFormat and downsteamPayloadFormat must not be set to different values")
+		}
+		return correct, nil
+	}
+	if correctPresent {
+		return correct, nil
+	}
+	if legacyPresent {
+		return legacy, nil
+	}
+	return "", fmt.Errorf("Invalid policy configuration: downstreamPayloadFormat must be a non-empty string")
 }
 
 func getPayloadFormat(params map[string]interface{}, key string, required bool) (string, bool, error) {
