@@ -64,6 +64,7 @@ func configuredParams(upstreamPayloadFormat string, downstreamPayloadFormat ...s
 	return params
 }
 
+// TestGetPolicy_LegacyMisspelledAlias verifies the deprecated alias still works.
 func TestGetPolicy_LegacyMisspelledAlias(t *testing.T) {
 	// Backward compatibility: the deprecated misspelled key still works.
 	p := newConfiguredPolicy(t, map[string]interface{}{
@@ -75,6 +76,7 @@ func TestGetPolicy_LegacyMisspelledAlias(t *testing.T) {
 	}
 }
 
+// TestGetPolicy_ConflictingDownstreamKeys verifies conflicting keys are rejected.
 func TestGetPolicy_ConflictingDownstreamKeys(t *testing.T) {
 	_, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 		"upstreamPayloadFormat":   "xml",

@@ -108,6 +108,7 @@ func GetPolicy(
 	}, nil
 }
 
+// Mode reports the processing modes required by the mediation policy.
 func (p *JSONXMLMediationPolicy) Mode() policy.ProcessingMode {
 	return policy.ProcessingMode{
 		RequestHeaderMode:  policy.HeaderModeSkip,
@@ -117,15 +118,17 @@ func (p *JSONXMLMediationPolicy) Mode() policy.ProcessingMode {
 	}
 }
 
+// getUpstreamPayloadFormat extracts and validates the upstream payload format.
 func getUpstreamPayloadFormat(params map[string]interface{}) (string, error) {
 	upstreamPayloadFormat, _, err := getPayloadFormat(params, "upstreamPayloadFormat", true)
 	return upstreamPayloadFormat, err
 }
 
+// getDownstreamPayloadFormat extracts the downstream payload format.
+// Correct spelling is preferred. The misspelled "downsteamPayloadFormat"
+// is kept as a deprecated alias so existing API configs keep working.
+// If both keys are set they must agree.
 func getDownstreamPayloadFormat(params map[string]interface{}) (string, error) {
-	// Correct spelling is preferred. The misspelled "downsteamPayloadFormat"
-	// is kept as a deprecated alias so existing API configs keep working.
-	// If both keys are set they must agree.
 	correct, correctPresent, correctErr := getPayloadFormat(params, "downstreamPayloadFormat", false)
 	legacy, legacyPresent, legacyErr := getPayloadFormat(params, "downsteamPayloadFormat", false)
 	if correctPresent && correctErr != nil {
@@ -153,6 +156,7 @@ func getDownstreamPayloadFormat(params map[string]interface{}) (string, error) {
 	return "", fmt.Errorf("Invalid policy configuration: downstreamPayloadFormat must be a non-empty string")
 }
 
+// getPayloadFormat validates a single payload format parameter.
 func getPayloadFormat(params map[string]interface{}, key string, required bool) (string, bool, error) {
 	if params == nil {
 		if required {
